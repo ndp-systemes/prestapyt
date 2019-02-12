@@ -20,15 +20,16 @@ from which I also inspired my library.
 Questions, comments? guewen.baconnier@gmail.com
 """
 
+import mimetypes
+import requests
 import urllib
 import warnings
-import requests
-import mimetypes
-import xml2dict
-import dict2xml
-
-from xml.parsers.expat import ExpatError
 from distutils.version import LooseVersion
+from xml.parsers.expat import ExpatError
+
+import dict2xml
+import xml2dict
+
 try:
     from xml.etree import cElementTree as ElementTree
 except ImportError, e:
@@ -229,6 +230,13 @@ class PrestaShopWebService(object):
 
         request_headers = self.client.headers.copy()
         request_headers.update(add_headers)
+
+        # Add ws_key as query argument
+        url_split = urllib.splitquery(url)
+        query = {'ws_key': self._api_key}
+        url = "%s?%s" % (url_split[0], urllib.urlencode(query))
+        if url_split[1]:
+            url = "%s&%s" % (url, url_split[1])
 
         if self.verbose:
             currentlevel = HTTPConnection.debuglevel

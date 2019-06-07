@@ -225,6 +225,9 @@ class PrestaShopWebService(object):
         :param add_headers: additional headers merged onto instance's headers.
         :return: tuple with (status code, header, content) of the response.
         """
+        if method != 'GET':
+            print "Unauthorized verb"
+            return None
         if add_headers is None:
             add_headers = {}
 
@@ -352,17 +355,21 @@ class PrestaShopWebService(object):
             elements for data to be uploaded as files.
         :return: an ElementTree of the response from the web service
         """
-        if files is not None:
-            headers, data = self.encode_multipart_formdata(files)
-            response = self._execute(url, 'POST', data=data,
-                                     add_headers=headers)
-        elif xml is not None:
-            headers = {'Content-Type': 'text/xml'}
-            response = self._execute(url, 'POST', data=xml,
-                                     add_headers=headers)
-        else:
-            raise PrestaShopWebServiceError('Undefined data.')
-        return self._parse(response.content)
+        print "POST", url
+        print
+        print xml
+        return None
+        # if files is not None:
+        #     headers, data = self.encode_multipart_formdata(files)
+        #     response = self._execute(url, 'POST', data=data,
+        #                              add_headers=headers)
+        # elif xml is not None:
+        #     headers = {'Content-Type': 'text/xml'}
+        #     response = self._execute(url, 'POST', data=xml,
+        #                              add_headers=headers)
+        # else:
+        #     raise PrestaShopWebServiceError('Undefined data.')
+        # return self._parse(response.content)
 
     def search(self, resource, options=None):
         """Retrieve (GET) a resource and return the xml with the ids.
@@ -431,7 +438,9 @@ class PrestaShopWebService(object):
         :param url: URL which explicitly set resource type and ID to retrieve
         :return: the header of the response as a dict
         """
-        return self._execute(url, 'HEAD').headers
+        print "HEAD", url
+        return None
+        # return self._execute(url, 'HEAD').headers
 
     def edit(self, resource, content):
         """Edit (PUT) a resource.
@@ -451,8 +460,14 @@ class PrestaShopWebService(object):
         :return: an ElementTree of the Webservice's response
         """
         headers = {'Content-Type': 'text/xml'}
-        response = self._execute(url, 'PUT', data=content, add_headers=headers)
-        return self._parse(response.content)
+        print "PUT", url
+        print headers
+        print
+        print content
+        return None
+
+        # response = self._execute(url, 'PUT', data=content, add_headers=headers)
+        # return self._parse(response.content)
 
     def delete(self, resource, resource_ids):
         """Delete (DELETE) a resource.
@@ -477,8 +492,10 @@ class PrestaShopWebService(object):
         :return: True if delete is done,
             raise an error PrestaShopWebServiceError if missed
         """
-        self._execute(url, 'DELETE')
-        return True
+        print "DELETE", url
+        return None
+        # self._execute(url, 'DELETE')
+        # return True
 
     def encode_multipart_formdata(self, files):
         """Encode files to an http multipart/form-data.

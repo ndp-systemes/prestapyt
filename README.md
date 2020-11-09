@@ -12,7 +12,6 @@ supports the Web Service's HTTP-based CRUD operations (handling any errors)
 and then returns the XML ready for you to work with in Python
 (as well as prestasac if you work with scala).
 
-
 ## Installation
 
 The easiest way to install prestapyt (needs setuptools):
@@ -28,6 +27,9 @@ If you do not have setuptools, download prestapyt as a .tar.gz or .zip from
 
     python setup.py install
 
+In order to always be uptodate, the best way is to use pip from this repo with the following command :
+
+    pip install --ignore-installed git+https://github.com/prestapyt/prestapyt.git@master
 
 ## Usage
 

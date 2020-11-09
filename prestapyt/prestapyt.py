@@ -20,19 +20,23 @@ from which I also inspired my library.
 Questions, comments? guewen.baconnier@gmail.com
 """
 
-import mimetypes
-import requests
-import urllib
+from future.standard_library import install_aliases
+install_aliases()
+
+from urllib.parse import urlencode, splitquery
+
 import warnings
-from distutils.version import LooseVersion
+import requests
+import mimetypes
+
+from . import xml2dict
+from . import dict2xml
+
 from xml.parsers.expat import ExpatError
-
-import dict2xml
-import xml2dict
-
+from distutils.version import LooseVersion
 try:
     from xml.etree import cElementTree as ElementTree
-except ImportError, e:
+except ImportError as e:
     from xml.etree import ElementTree
 
 # http://docs.python-requests.org/en/master/api/#api-changes
@@ -45,7 +49,8 @@ try:  # for Python 3
 except ImportError:
     from httplib import HTTPConnection
 
-from .version import __author__, __version__  # noqa
+from .version import __author__
+from .version import __version__
 
 
 class PrestaShopWebServiceError(Exception):
@@ -76,7 +81,7 @@ class PrestaShopWebService(object):
     """Interact with the PrestaShop WebService API, use XML for messages."""
 
     MIN_COMPATIBLE_VERSION = '1.4.0.17'
-    MAX_COMPATIBLE_VERSION = '1.5.9.0'
+    MAX_COMPATIBLE_VERSION = '1.7.5.2'
 
     def __init__(self, api_url, api_key, debug=False, session=None,
                  verbose=False):
@@ -235,9 +240,9 @@ class PrestaShopWebService(object):
         request_headers.update(add_headers)
 
         # Add ws_key as query argument
-        url_split = urllib.splitquery(url)
+        url_split = splitquery(url)
         query = {'ws_key': self._api_key}
-        url = "%s?%s" % (url_split[0], urllib.urlencode(query))
+        url = "%s?%s" % (url_split[0], urlencode(query))
         if url_split[1]:
             url = "%s&%s" % (url, url_split[1])
 
@@ -271,7 +276,7 @@ class PrestaShopWebService(object):
 
         try:
             parsed_content = ElementTree.fromstring(content)
-        except ExpatError, err:
+        except ExpatError as err:
             raise PrestaShopWebServiceError(
                 'HTTP XML response is not parsable : %s' % (err,)
             )
@@ -298,8 +303,8 @@ class PrestaShopWebService(object):
                 'Parameters must be a instance of dict'
             )
         supported = (
-            'filter', 'display', 'sort',
-            'limit', 'schema', 'date', 'id_shop'
+            'filter', 'display', 'sort','ws_key',
+            'limit', 'schema', 'date', 'id_shop', 'id_group_shop',
         )
         # filter[firstname] (as e.g.) is allowed
         # so check only the part before a [
@@ -330,9 +335,9 @@ class PrestaShopWebService(object):
         """
         if self.debug:
             options.update({'debug': True})
-        return urllib.urlencode(options)
+        return urlencode(options)
 
-    def add(self, resource, content=None, files=None):
+    def add(self, resource, content=None, files=None, options=None):
         """Add (POST) a resource. Content can be a dict of values to create.
 
         :param resource: type of resource to create
@@ -344,7 +349,11 @@ class PrestaShopWebService(object):
             for data to be uploaded as files.
         :return: an ElementTree of the response from the web service
         """
-        return self.add_with_url(self._api_url + resource, content, files)
+        full_url = self._api_url + resource
+        if options is not None:
+            self._validate_query_options(options)
+            full_url += "?%s" % (self._options_to_querystring(options),)
+        return self.add_with_url(full_url, content, files)
 
     def add_with_url(self, url, xml=None, files=None):
         """Add (POST) a resource.
@@ -442,7 +451,7 @@ class PrestaShopWebService(object):
         return None
         # return self._execute(url, 'HEAD').headers
 
-    def edit(self, resource, content):
+    def edit(self, resource, content, options=None):
         """Edit (PUT) a resource.
 
         :param resource: type of resource to edit
@@ -450,6 +459,9 @@ class PrestaShopWebService(object):
         :return: an ElementTree of the Webservice's response
         """
         full_url = "%s%s" % (self._api_url, resource)
+        if options:
+            self._validate_query_options(options)
+            full_url += "?%s" % (self._options_to_querystring(options),)
         return self.edit_with_url(full_url, content)
 
     def edit_with_url(self, url, content):
@@ -505,7 +517,7 @@ class PrestaShopWebService(object):
         :return: headers and body.
         """
         BOUNDARY = '----------ThIs_Is_tHe_bouNdaRY_$'
-        CRLF = '\r\n'
+        CRLF = b'\r\n'
         L = []
         for (key, filename, value) in files:
             L.append('--' + BOUNDARY)
@@ -517,6 +529,7 @@ class PrestaShopWebService(object):
             L.append(value)
         L.append('--' + BOUNDARY + '--')
         L.append('')
+        L = map(lambda l: l if isinstance(l, bytes) else l.encode('utf-8'), L)
         body = CRLF.join(L)
         headers = {
             'Content-Type': 'multipart/form-data; boundary=%s' % BOUNDARY
@@ -556,7 +569,7 @@ class PrestaShopWebServiceDict(PrestaShopWebService):
             if not response:
                 return False
             if level > 0:
-                return dive(response[response.keys()[0]], level=level - 1)
+                return dive(response[list(response.keys())[0]], level=level - 1)
             return response
 
         # returned response looks like :

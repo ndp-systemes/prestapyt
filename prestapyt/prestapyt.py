@@ -560,6 +560,9 @@ class PrestaShopWebServiceDict(PrestaShopWebService):
         # {'addresses': {'address': [{'attrs': {'id': '1'}, 'value': ''},
         #                            {'attrs': {'id': '2'}, 'value': ''},
         #                            {'attrs': {'id': '3'}, 'value': ''}]}}
+        # Or if we sent a display filter {'addresses': {'address': [{'id': '1', 'value': ''},
+        #                                                           {'id': '2', 'value': ''},
+        #                                                           {'id': '3', 'value': ''}]}}
         # for one resource :
         # {'addresses': {'address': {'attrs': {'id': '1'}, 'value': ''}}}
         # for zero resource :
@@ -572,9 +575,9 @@ class PrestaShopWebServiceDict(PrestaShopWebService):
         if not elems:
             return []
         elif isinstance(elems, list):
-            ids = [int(elem['attrs']['id']) for elem in elems]
+            ids = [elem.get('id') and int(elem['id']) or int(elem['attrs']['id']) for elem in elems]
         else:
-            ids = [int(elems['attrs']['id'])]
+            ids = [elems.get('id') and int(elems['id']) or int(elems['attrs']['id'])]
         return ids
 
     def get_with_url(self, url):
